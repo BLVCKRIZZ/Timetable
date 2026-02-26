@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#fffdf7">
+<title>Timetable</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./css/timetable.css">
+</head>
+<body>
+
+<div id="app-lock" class="auth-gate">
+  <div class="auth-card">
+    <span class="label">Welcome</span>
+    <h1 id="app-auth-title" class="auth-title">Sign in to open your timetable</h1>
+    <input id="app-email" type="email" placeholder="Email" spellcheck="false" />
+    <input id="app-password" type="password" placeholder="Password" spellcheck="false" />
+    <input id="app-confirm-password" type="password" placeholder="Confirm password (for sign up)" spellcheck="false" />
+    <button id="signin-btn" class="btn" onclick="appLogin()">Sign In</button>
+    <button id="signup-btn" class="btn" onclick="appSignUp()">Create Account</button>
+    <button id="reset-password-btn" class="btn" onclick="appResetPassword()">Reset Password</button>
+    <span id="app-login-status" class="auth-status">Login required before using this app</span>
+  </div>
+</div>
+
+<div id="app-shell" class="page app-hidden">
+  <div class="header">
+    <div class="title-area">
+      <span class="label">Timetable</span>
+      <input id="main-title" type="text" value="My Weekly Schedule" spellcheck="false" />
+      <input class="subtitle-input" type="text" placeholder="Add a subtitle or description..." spellcheck="false" />
+    </div>
+    <div class="controls">
+      <button class="btn" id="logout-btn" onclick="appLogout()">Log Out</button>
+      <button class="btn" id="settings-toggle-btn" onclick="toggleSettingsPanel()">⚙ Customize</button>
+    </div>
+  </div>
+
+  <div id="settings-panel" class="settings-panel">
+    <div class="settings-grid">
+      <div class="settings-card">
+        <span class="settings-title">Timetable Tools</span>
+        <button class="btn" data-requires-admin onclick="addColumn()">+ Add Column</button>
+        <button class="btn" data-requires-admin onclick="removeColumn()">− Remove Column</button>
+        <button class="btn danger" data-requires-admin onclick="removeSelectedItem()">Remove Selected</button>
+        <button class="btn danger" data-requires-admin onclick="clearAll()">Clear All</button>
+      </div>
+
+      <div class="settings-card">
+        <span class="settings-title">Time Grid</span>
+        <span class="settings-label">Interval</span>
+        <select id="time-interval-select" class="toolbar-select" data-admin-action onchange="onTimeSettingsChange()" title="How often time slots appear">
+          <option value="60">Every 60 mins</option>
+          <option value="30">Every 30 mins</option>
+          <option value="15">Every 15 mins</option>
+        </select>
+        <span class="settings-label">Range Mode</span>
+        <select id="time-range-mode" class="toolbar-select" data-admin-action onchange="onTimeSettingsChange()" title="Use a custom day section or full 24-hour cycle">
+          <option value="custom">Custom start/end</option>
+          <option value="full">Full 24-hour cycle</option>
+        </select>
+        <span class="settings-label">Start Time</span>
+        <select id="time-start-select" class="toolbar-select" data-admin-action onchange="onTimeSettingsChange()" title="First time slot to show"></select>
+        <span class="settings-label">End Time</span>
+        <select id="time-end-select" class="toolbar-select" data-admin-action onchange="onTimeSettingsChange()" title="Last time slot to show"></select>
+        <span class="settings-help">Quick presets</span>
+        <button id="time-preset-early" class="btn small" data-admin-action onclick="applyTimePreset('early')" title="Set range to 1 AM through 4 AM">Preset: 1 AM - 4 AM</button>
+        <button id="time-preset-workday" class="btn small" data-admin-action onclick="applyTimePreset('workday')" title="Set range to 9 AM through 5 PM">Preset: 9 AM - 5 PM</button>
+        <button id="time-preset-full" class="btn small" data-admin-action onclick="applyTimePreset('full')" title="Show the full 24-hour day">Preset: 24 Hours</button>
+      </div>
+
+      <div class="settings-card">
+        <span class="settings-title">Manage Data</span>
+        <button class="btn small" data-admin-action onclick="clearDefaultPlaceholders()">Clear Defaults</button>
+        <button class="btn small" data-admin-action onclick="undoPreviousChange()">Undo Previous</button>
+        <button class="btn small danger" data-admin-action onclick="clearAllChanges()">Clear All Changes</button>
+      </div>
+
+      <div class="settings-card">
+        <span class="settings-title">Cell Colors</span>
+        <div class="color-tools">
+          <input id="cell-color-picker" class="color-picker" type="color" value="#dbeafe" title="Choose color" />
+          <button class="btn small" data-admin-action onclick="applyCustomColorToSelected()">Apply Color</button>
+          <button class="btn small" data-admin-action onclick="applyCustomColorToSelectedRow()">Apply to Row</button>
+          <button class="btn small" data-admin-action onclick="applyCustomColorToSelectedColumn()">Apply to Column</button>
+          <button class="btn small" data-admin-action onclick="clearSelectedColor()">Clear Cell Color</button>
+        </div>
+        <div class="color-presets" aria-label="Cell color presets">
+          <button class="color-preset-btn" data-admin-action data-preset-index="0" title="Preset color 1" style="--preset-color:#dbeafe" onclick="applyColorPreset(0)"></button>
+          <button class="color-preset-btn" data-admin-action data-preset-index="1" title="Preset color 2" style="--preset-color:#e9d5ff" onclick="applyColorPreset(1)"></button>
+          <button class="color-preset-btn" data-admin-action data-preset-index="2" title="Preset color 3" style="--preset-color:#dcfce7" onclick="applyColorPreset(2)"></button>
+          <button class="color-preset-btn" data-admin-action data-preset-index="3" title="Preset color 4" style="--preset-color:#fee2e2" onclick="applyColorPreset(3)"></button>
+          <button class="color-preset-btn" data-admin-action data-preset-index="4" title="Preset color 5" style="--preset-color:#fef3c7" onclick="applyColorPreset(4)"></button>
+          <button class="color-preset-btn" data-admin-action data-preset-index="5" title="Preset color 6" style="--preset-color:#cffafe" onclick="applyColorPreset(5)"></button>
+          <button class="color-preset-btn" data-admin-action data-preset-index="6" title="Preset color 7" style="--preset-color:#fce7f3" onclick="applyColorPreset(6)"></button>
+          <button class="color-preset-btn" data-admin-action data-preset-index="7" title="Preset color 8" style="--preset-color:#e5e7eb" onclick="applyColorPreset(7)"></button>
+        </div>
+        <div class="color-tools">
+          <span class="settings-label">Cell Pattern Preset</span>
+          <select id="color-preset-select" class="toolbar-select" onchange="onThemePresetSelectChange()">
+            <option value="0">Classic</option>
+            <option value="1">Ocean</option>
+            <option value="2">Forest</option>
+            <option value="3">Rose</option>
+            <option value="4">Sunset</option>
+            <option value="5">Slate</option>
+            <option value="6">Violet</option>
+            <option value="7">Mint</option>
+          </select>
+          <button class="btn small" data-admin-action onclick="applyCellsPatternPresetFromPicker()">Apply Pattern to Cells</button>
+          <button class="btn small" data-admin-action onclick="resetColorPresets()">Reset Presets</button>
+        </div>
+        <span class="settings-help">Timetable theme presets</span>
+        <div class="theme-presets" aria-label="Timetable theme presets">
+          <button id="theme-preset-0" class="theme-preset-btn" title="Classic" style="--theme-chip:#f5f0e8" onclick="applyThemePresetFromChip(0)"></button>
+          <button id="theme-preset-1" class="theme-preset-btn" title="Ocean" style="--theme-chip:#eef4ff" onclick="applyThemePresetFromChip(1)"></button>
+          <button id="theme-preset-2" class="theme-preset-btn" title="Forest" style="--theme-chip:#f4fff7" onclick="applyThemePresetFromChip(2)"></button>
+          <button id="theme-preset-3" class="theme-preset-btn" title="Rose" style="--theme-chip:#fff3f4" onclick="applyThemePresetFromChip(3)"></button>
+          <button id="theme-preset-4" class="theme-preset-btn" title="Sunset" style="--theme-chip:#fff9ed" onclick="applyThemePresetFromChip(4)"></button>
+          <button id="theme-preset-5" class="theme-preset-btn" title="Slate" style="--theme-chip:#f2f3f5" onclick="applyThemePresetFromChip(5)"></button>
+          <button id="theme-preset-6" class="theme-preset-btn" title="Violet" style="--theme-chip:#f6f0ff" onclick="applyThemePresetFromChip(6)"></button>
+          <button id="theme-preset-7" class="theme-preset-btn" title="Mint" style="--theme-chip:#f3fff9" onclick="applyThemePresetFromChip(7)"></button>
+        </div>
+        <select id="now-line-theme" class="toolbar-select" data-admin-action onchange="setNowLineTheme(this.value)">
+          <option value="cyan">Live Line: Cyber Cyan</option>
+          <option value="violet">Live Line: Electric Violet</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="week-toolbar">
+    <div class="toolbar-group">
+      <button class="btn small view-toggle active" id="timetable-view-btn" onclick="switchView('timetable')">Timetable</button>
+      <button class="btn small view-toggle" id="calendar-view-btn" onclick="switchView('calendar')">Calendar</button>
+    </div>
+    <div class="toolbar-group">
+      <button class="btn small" id="prev-week-btn" onclick="changeWeek(-1)">← Prev Week</button>
+      <button class="btn small" onclick="goToCurrentWeek()">Today</button>
+      <button class="btn small" id="next-week-btn" onclick="changeWeek(1)">Next Week →</button>
+    </div>
+    <div class="toolbar-group">
+      <select id="country-select" class="toolbar-select" onchange="onCountryChange()"></select>
+      <span id="holiday-status" class="auth-status">Loading holidays...</span>
+    </div>
+    <span id="week-label" class="week-label">Week</span>
+  </div>
+
+  <div class="view-stack">
+    <div id="timetable-panel" class="view-panel active">
+      <div class="table-wrap">
+        <div id="now-line" class="now-line"></div>
+        <table id="timetable">
+          <thead>
+            <tr id="header-row">
+              <th><input type="text" value="Time" spellcheck="false" /></th>
+              <th><input type="text" value="Monday" spellcheck="false" /></th>
+              <th><input type="text" value="Tuesday" spellcheck="false" /></th>
+              <th><input type="text" value="Wednesday" spellcheck="false" /></th>
+              <th><input type="text" value="Thursday" spellcheck="false" /></th>
+              <th><input type="text" value="Friday" spellcheck="false" /></th>
+              <th><input type="text" value="Saturday" spellcheck="false" /></th>
+              <th><input type="text" value="Sunday" spellcheck="false" /></th>
+              <th style="min-width:40px;width:40px;"></th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="calendar-panel" class="view-panel">
+      <div class="calendar-wrap">
+        <div class="calendar-head">
+          <button class="btn small" id="prev-month-btn" onclick="changeMonth(-1)">← Prev Month</button>
+          <div id="calendar-title" class="calendar-title">Calendar</div>
+          <button class="btn small" id="next-month-btn" onclick="changeMonth(1)">Next Month →</button>
+        </div>
+        <div id="calendar-grid" class="calendar-grid"></div>
+        <div class="calendar-info">
+          <span id="country-info">Country: --</span>
+          <span id="holiday-count">Public Holidays: 0</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <span class="hint">Tip: Keep the page clean by using ⚙ Customize for login, colors and advanced tools</span>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="./js/timetable.js"></script>
+</body>
+</html>
+
